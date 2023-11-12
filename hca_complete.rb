@@ -5,10 +5,14 @@ require 'daru'
 require 'gruff'
 
 # Load wine dataset
-wine = Daru::DataFrame.from_csv('wine_data.csv')
+def load_dataset(file_path)
+  Daru::DataFrame.from_csv(file_path)
+end
 
-# Select first 26 rows and drop the 'target' column
-data = wine.head(26).delete_vector('target')
+# Select rows and drop the 'target' column
+def preprocess_data(data, rows = 26)
+  data.head(rows).delete_vector('target')
+end
 
 # Autoscaling data
 def autoscale(data)
@@ -22,18 +26,14 @@ def autoscale(data)
   Daru::DataFrame.new(scaled_data, order: data.vectors)
 end
 
-df = autoscale(data)
-
 # Euclidean Distance Matrix
-def df_euclidean_distance_matrix(df)
+def euclidean_distance_matrix(df)
   matrix = df.map_rows do |row1|
     df.map_rows { |row2| Math.sqrt((row1 - row2).map { |x| x**2 }.sum) }
   end
 
   Daru::DataFrame.new(matrix)
 end
-
-df_oe = df_euclidean_distance_matrix(df)
 
 # Hierarchical Clustering Algorithm (HCA)
 def hierarchical_clustering(distance_matrix)
@@ -98,13 +98,30 @@ def hierarchical_clustering(distance_matrix)
   last
 end
 
-hca_complete = hierarchical_clustering(df_oe)
-
-# Plot dendrogram
-def plot_dendrogram(data)
+# Plot dendrogram and save as an image file
+def plot_dendrogram(data, output_file = 'dendrogram.png')
   fig = Daru::DataFrame.new(data, order: ['Obj1', 'Obj2', 'Distance', 'NumObj']).plot(type: :dendrogram)
+  fig.write(output_file)
   fig.show
 end
 
-plot_dendrogram(hca_complete)
+# Main function to execute the complete workflow
+def main(file_path, rows = 26, output_file = 'dendrogram.png')
+  wine_data = load_dataset(file_path)
+  processed_data = preprocess_data(wine_data, rows)
+  scaled_data = autoscale(processed_data)
+  distance_matrix = euclidean_distance_matrix(scaled_data)
+  hca_result = hierarchical_clustering(distance_matrix)
+  plot_dendrogram(hca_result, output_file)
+end
+
+# Execute the main function with command-line arguments
+if ARGV.length >= 1
+  file_path = ARGV[0]
+  rows = ARGV[1]&.to_i || 26
+  output_file = ARGV[2] || 'dendrogram.png'
+  main(file_path, rows, output_file)
+else
+  puts 'Usage: ruby script_name.rb <file_path> [rows] [output_file]'
+end
 
