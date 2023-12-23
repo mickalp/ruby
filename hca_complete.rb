@@ -1,5 +1,3 @@
-# Install the 'daru' and 'gruff' gems if you haven't already
-# gem install daru gruff
 
 require 'daru'
 require 'gruff'
@@ -32,7 +30,7 @@ def euclidean_distance_matrix(df)
     df.map_rows { |row2| Math.sqrt((row1 - row2).map { |x| x**2 }.sum) }
   end
 
-  Daru::DataFrame.new(matrix)
+  Daru::DataFrame.new(matrix, order: df.index, index: df.index)
 end
 
 # Hierarchical Clustering Algorithm (HCA)
@@ -102,7 +100,6 @@ end
 def plot_dendrogram(data, output_file = 'dendrogram.png')
   fig = Daru::DataFrame.new(data, order: ['Obj1', 'Obj2', 'Distance', 'NumObj']).plot(type: :dendrogram)
   fig.write(output_file)
-  fig.show
 end
 
 # Main function to execute the complete workflow
@@ -124,4 +121,3 @@ if ARGV.length >= 1
 else
   puts 'Usage: ruby script_name.rb <file_path> [rows] [output_file]'
 end
-
